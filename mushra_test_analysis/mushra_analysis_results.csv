@@ -1,0 +1,35 @@
+MUSHRA Test Analysis Results
+
+Mean Ratings:
+,0
+Personalised HRTF Rating,81.16666666666667
+Benchmark HRTF Rating,78.83333333333333
+
+Standard Deviations:
+,0
+Personalised HRTF Rating,6.462713568360172
+Benchmark HRTF Rating,5.382068994974578
+
+Statistical Analysis:
+t-statistic,0.5576
+p-value,0.6012
+
+Detailed Summary Statistics:
+,Personalised HRTF Rating,Benchmark HRTF Rating
+count,6.0,6.0
+mean,81.16666666666667,78.83333333333333
+std,6.462713568360172,5.382068994974578
+min,74.0,73.0
+25%,76.0,74.75
+50%,81.0,78.0
+75%,84.5,82.0
+max,91.0,87.0
+
+Individual Results:
+,Participant,Personalised HRTF,Benchmark HRTF,Difference
+0,p1,85,77,8
+1,p2,91,79,12
+2,p3,79,73,6
+3,p4,74,87,-13
+4,p5,83,74,9
+5,p6,75,83,-8

@@ -1,0 +1,18 @@
+MUSHRA Test Analysis Summary
+==========================
+
+Mean Ratings:
+Personalised HRTF Rating    81.166667
+Benchmark HRTF Rating       78.833333
+dtype: float64
+
+Standard Deviations:
+Personalised HRTF Rating    6.462714
+Benchmark HRTF Rating       5.382069
+dtype: float64
+
+Statistical Analysis:
+t-statistic = 0.56
+p-value = 0.6012
+
+Conclusion: No significant difference found (p >= 0.05)

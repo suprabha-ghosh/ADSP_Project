@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MUSHRA HRTF Comparison Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1>MUSHRA HRTF Comparison Test</h1>
+        
+        <div class="participant-info">
+            <label for="participantName">Participant Name:</label>
+            <input type="text" id="participantName" required>
+            <div id="nameError" class="error-message hidden">Please enter your name</div>
+        </div>
+
+        <div class="audio-container">
+            <div class="audio-title">Reference Audio</div>
+            <div class="controls">
+                <button class="play-pause-button" onclick="togglePlay('reference')">
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="audio-progress">
+                    <div class="progress-bar" id="reference-progress"></div>
+                </div>
+                <audio id="reference" src="audio/original.wav" onended="resetPlayButton('reference')"></audio>
+            </div>
+        </div>
+
+        <div class="audio-container">
+            <div class="audio-title">Personalised HRTF Audio</div>
+            <div class="controls">
+                <button class="play-pause-button" data-audio-id="model_hrtf" onclick="togglePlay('model_hrtf')">
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="audio-progress">
+                    <div class="progress-bar" id="model_hrtf-progress"></div>
+                </div>
+                <audio id="model_hrtf" onended="resetPlayButton('model_hrtf')"></audio>
+            </div>
+            <div class="rating-container">
+                <div class="rating-display">
+                    Current Rating: <span id="model_hrtf_value">0</span>
+                </div>
+                <input type="range" min="0" max="100" value="0" 
+                       class="rating-slider" data-audio-id="model_hrtf"
+                       oninput="updateRatingDisplay(this, 'model_hrtf_value')">
+                <div class="rating-numbers">
+                    <span>0</span>
+                    <span>20</span>
+                    <span>40</span>
+                    <span>60</span>
+                    <span>80</span>
+                    <span>100</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="audio-container">
+            <div class="audio-title">Benchmark HRTF Audio</div>
+            <div class="controls">
+                <button class="play-pause-button" data-audio-id="benchmark_hrtf" onclick="togglePlay('benchmark_hrtf')">
+                    <i class="fas fa-play"></i>
+                </button>
+                <div class="audio-progress">
+                    <div class="progress-bar" id="benchmark_hrtf-progress"></div>
+                </div>
+                <audio id="benchmark_hrtf" onended="resetPlayButton('benchmark_hrtf')"></audio>
+            </div>
+            <div class="rating-container">
+                <div class="rating-display">
+                    Current Rating: <span id="benchmark_hrtf_value">0</span>
+                </div>
+                <input type="range" min="0" max="100" value="0" 
+                       class="rating-slider" data-audio-id="benchmark_hrtf"
+                       oninput="updateRatingDisplay(this, 'benchmark_hrtf_value')">
+                <div class="rating-numbers">
+                    <span>0</span>
+                    <span>20</span>
+                    <span>40</span>
+                    <span>60</span>
+                    <span>80</span>
+                    <span>100</span>
+                </div>
+            </div>
+        </div>
+
+        <button class="next-button" onclick="nextParticipant()">Next Participant</button>
+
+        <div id="results" class="hidden">
+            <h2>Test Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Participant</th>
+                        <th>Personalised HRTF Rating</th>
+                        <th>Benchmark HRTF Rating</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody"></tbody>
+            </table>
+            <button class="next-button" onclick="downloadResults()">Download Results</button>
+        </div>
+    </div>
+
+    <script>
+        let currentParticipant = 0;
+        let participants = [];
+
+        function updateRatingDisplay(slider, displayId) {
+            document.getElementById(displayId).textContent = slider.value;
+        }
+
+        function togglePlay(audioId) {
+            const audio = document.getElementById(audioId);
+            const button = document.querySelector(`button[onclick="togglePlay('${audioId}')"]`);
+            const icon = button.querySelector('i');
+
+            // Stop all other audio
+            document.querySelectorAll('audio').forEach(a => {
+                if (a.id !== audioId && !a.paused) {
+                    a.pause();
+                    const otherButton = document.querySelector(`button[onclick="togglePlay('${a.id}')"]`);
+                    otherButton.querySelector('i').className = 'fas fa-play';
+                }
+            });
+
+            if (audio.paused) {
+                audio.play();
+                icon.className = 'fas fa-pause';
+                updateProgress(audioId);
+            } else {
+                audio.pause();
+                icon.className = 'fas fa-play';
+            }
+        }
+
+        function updateProgress(audioId) {
+            const audio = document.getElementById(audioId);
+            const progressBar = document.getElementById(`${audioId}-progress`);
+            
+            if (!audio.paused) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = `${progress}%`;
+                requestAnimationFrame(() => updateProgress(audioId));
+            }
+        }
+
+        function resetPlayButton(audioId) {
+            const button = document.querySelector(`button[onclick="togglePlay('${audioId}')"]`);
+            const icon = button.querySelector('i');
+            icon.className = 'fas fa-play';
+            document.getElementById(`${audioId}-progress`).style.width = '0%';
+        }
+
+        function validateName() {
+            const nameInput = document.getElementById('participantName');
+            const nameError = document.getElementById('nameError');
+            if (!nameInput.value.trim()) {
+                nameError.classList.remove('hidden');
+                return false;
+            }
+            nameError.classList.add('hidden');
+            return true;
+        }
+
+        function nextParticipant() {
+            if (!validateName()) return;
+
+            // Save current ratings
+            const ratings = {
+                name: document.getElementById('participantName').value,
+                modelRating: document.querySelector('input[data-audio-id="model_hrtf"]').value,
+                benchmarkRating: document.querySelector('input[data-audio-id="benchmark_hrtf"]').value
+            };
+            
+            participants.push(ratings);
+
+            // Stop any playing audio
+            document.querySelectorAll('audio').forEach(audio => {
+                audio.pause();
+                audio.currentTime = 0;
+            });
+
+            // Reset play buttons and progress bars
+            document.querySelectorAll('.play-pause-button i').forEach(icon => {
+                icon.className = 'fas fa-play';
+            });
+            document.querySelectorAll('.progress-bar').forEach(bar => {
+                bar.style.width = '0%';
+            });
+
+            currentParticipant++;
+            if (currentParticipant < 6) {
+                // Load next participant's audio files
+                document.getElementById('model_hrtf').src = `audio/model_hrtf${currentParticipant + 1}.wav`;
+                document.getElementById('benchmark_hrtf').src = `audio/benchmark_hrtf_person${currentParticipant + 1}.wav`;
+                
+                // Reset form
+                document.getElementById('participantName').value = '';
+                document.querySelectorAll('.rating-slider').forEach(slider => {
+                    slider.value = 0;
+                    updateRatingDisplay(slider, `${slider.dataset.audioId}_value`);
+                });
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            const resultsDiv = document.getElementById('results');
+            const resultsBody = document.getElementById('resultsBody');
+            resultsDiv.classList.remove('hidden');
+
+            resultsBody.innerHTML = '';
+            participants.forEach((p, index) => {
+                const row = resultsBody.insertRow();
+                row.insertCell(0).textContent = p.name;
+                row.insertCell(1).textContent = p.modelRating;
+                row.insertCell(2).textContent = p.benchmarkRating;
+            });
+        }
+
+        function downloadResults() {
+            let csv = 'Participant,Personalised HRTF Rating,Benchmark HRTF Rating\n';
+            participants.forEach(p => {
+                const modelRating = p.modelRating || '0';
+                const benchmarkRating = p.benchmarkRating || '0';
+            csv += `${p.name},${modelRating},${benchmarkRating}\n`;
+        });
+
+        // Create blob and URL
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+    
+        // Create a link element
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mushra_test_results.csv'; // Just the filename without path
+    
+        // Show file picker dialog
+        a.click();
+    
+        // Cleanup
+        window.URL.revokeObjectURL(url);
+        }
+
+
+        // Initialize on page load
+        window.onload = function() {
+            document.getElementById('model_hrtf').src = 'audio/model_hrtf1.wav';
+            document.getElementById('benchmark_hrtf').src = 'audio/benchmark_hrtf_person1.wav';
+        };
+    </script>
+</body>
+</html>
