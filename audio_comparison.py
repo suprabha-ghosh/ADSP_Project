@@ -6,7 +6,6 @@ from scipy import signal
 import os
 from scipy.stats import pearsonr
 
-#class
 class HRTFComparison:
     def __init__(self):
         self.results = []
